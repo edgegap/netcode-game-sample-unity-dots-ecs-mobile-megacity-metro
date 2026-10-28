@@ -76,7 +76,7 @@ The server logs `[Edgegap] Connected players: 1` when the client joins.
 
 ## 5. Create the matchmaker
 
-1. Set `application.version` in `matchmaker-config.json` to your app version. Profile `metro`: one team of 2 to 150 players. Two players searching together get one server about 10 s after they queue, and a lone player gets one after about 20 s (tickets expire after 30 s). That suits testing; raise the minimum for real matches.
+1. Set `application.version` in `matchmaker-config.json` to your app version. Profile `metro`: one team of 2 to 150 players. Two players searching together get one server as soon as they are matched, and a lone player gets one after about 20 s (tickets expire after 30 s). That suits testing; raise the minimum for real matches.
 2. In the dashboard, open **Matchmaker → Create Matchmaker**, upload `matchmaker-config.json`, then click **Create and Start**.
 3. When it shows ONLINE, copy the **API URL** and **Auth Token** into `Assets/Resources/EdgegapMatchmakerSettings.asset`. The auth token belongs to the matchmaker and grants no access to your Edgegap account, so it is safe to ship in clients.
 4. Rebuild the server and the clients. Both read this asset: the client to find matches, the server to create backfills.
