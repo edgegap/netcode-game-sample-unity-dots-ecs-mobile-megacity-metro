@@ -10,8 +10,10 @@ The game's netcode is unchanged. The Edgegap pieces are a few new files, plus sm
 |---|---|
 | `Assets/Scripts/Gameplay/Mix/Multiplayer/Edgegap/EdgegapEnvironment.cs` | Reads what Edgegap injects into a deployment, and the client's direct-connect target (`-edgegapConnect` / `EDGEGAP_CONNECT`) |
 | `Assets/Scripts/Gameplay/Mix/Multiplayer/Edgegap/EdgegapServerLifecycleSystem.cs` | Server world, Edgegap only: stops the deployment when nobody joins or everyone has left |
-| `Assets/Edgegap/Editor/EdgegapServerBuild.cs` | **Tools → Edgegap → Build Linux Dedicated Server**, also callable from the command line |
-| `Dockerfile`, `.dockerignore` | Server image from `Builds/EdgegapServer/` |
+| `Packages/manifest.json` | The [Edgegap Unity plugin](https://github.com/edgegap/buildtool-unity-plugin) (`com.edgegap.unity-servers-plugin`, `#3.2.1`, Editor only): builds, containerizes, uploads and deploys the server from **Tools → Edgegap Server Hosting**, with its own Dockerfile |
+| `Assets/Edgegap/Editor/EdgegapPluginBuild.cs` | Runs the plugin's **Build server** from the command line |
+| `Assets/Edgegap/Editor/EdgegapClientBuild.cs` | Command-line test clients (Windows, Android) |
+| `.dockerignore` | Keeps the plugin's Docker context (the project root) to the server build, without debug symbols |
 | `Assets/Scripts/Gameplay/Mix/Multiplayer/SDK/Server/ServerManager.cs` | On Edgegap, skips Unity Gaming Services (UGS) sessions |
 | `Assets/Scripts/Gameplay/Mix/UI/MonoBehaviours/Matchmaker/MatchMakingConnector.cs` | Find Match uses the Edgegap matchmaker; with a direct-connect target, connects straight to the server. Either way, skips UGS sign-in |
 | `Assets/Scripts/Gameplay/Mix/Multiplayer/Edgegap/EdgegapMatchmakerSettings.cs`, `Assets/Resources/EdgegapMatchmakerSettings.asset` | Matchmaker URL, auth token, profile and backfill settings, shared by client and server |
@@ -27,42 +29,46 @@ With an empty matchmaker URL in `EdgegapMatchmakerSettings`, outside an Edgegap 
 ## Prerequisites
 
 - Unity `6000.1.0f1` with the **Linux Build Support (IL2CPP)**, **Linux Build Support (Mono)** and **Linux Dedicated Server Build Support** modules, plus the module for your client platform (Windows Build Support (IL2CPP) for the tested client).
-- Docker, and an [Edgegap account](https://app.edgegap.com).
+- Docker Desktop, running, and an [Edgegap account](https://app.edgegap.com).
 - Git LFS: the project is about 415 MB of LFS content.
 
 ## 1. Build the server
 
-Close the project in the Editor first, then from the project root:
+**In the Editor:** **Tools → Edgegap Server Hosting** → **Sign in with Edgegap** (or paste a token, then **Validate**) → **Build server**. The plugin switches to Linux with the Dedicated Server subtarget before building.
+
+**From the command line** (project closed in the Editor), from the project root:
 
 ```bash
-Unity -batchmode -quit -buildTarget Linux64 -standaloneBuildSubtarget Server -projectPath . -executeMethod EdgegapServerBuild.Build -logFile build.log
+Unity -batchmode -buildTarget Linux64 -standaloneBuildSubtarget Server -projectPath . -executeMethod EdgegapPluginBuild.BuildServer -logFile build.log
 ```
 
 Keep `-buildTarget Linux64 -standaloneBuildSubtarget Server`. Without them the Entities content build fails with `Unable to build with the current configuration`.
 
 The output goes to `Builds/EdgegapServer/` (`ServerBuild`, `ServerBuild_Data`, `UnityPlayer.so`). The folder is about 3.4 GB, mostly Burst debug information and the IL2CPP backup folder. `.dockerignore` leaves out `*_BurstDebugInformation_DoNotShip` and `*_BackUpThisFolder_ButDontShipItWithYourGame`, so the image is about 537 MB.
 
-## 2. Build the image and push it
+## 2. Build the image and test it
 
-```bash
-docker login registry.edgegap.com
-docker build --platform linux/amd64 -t registry.edgegap.com/<project>/megacity-metro:<tag> .
-docker push registry.edgegap.com/<project>/megacity-metro:<tag>
-```
+In the plugin window:
 
-Your registry project, username and token are on the dashboard's **Container Registry** page. The server listens on `0.0.0.0:7979` over UDP. Extra server arguments can be passed in the `UNITY_COMMANDLINE_ARGS` environment variable on the app version.
+1. **Containerize with Docker**: **Image Name** `megacity-metro`, **Image Tag** empty (the plugin uses the current UTC time), default Dockerfile.
+2. **Test Your Server Locally**: **Optional Docker Run Parameters** `-p 7979:7979/udp -e UNITY_COMMANDLINE_ARGS="-port 7979"`, then **Deploy local container**. **Terminate** when done.
 
-## 3. Create the app version
+The server needs `-port 7979`: without it Megacity binds to `127.0.0.1`, which nothing outside the container can reach. The plugin's Dockerfile passes `$UNITY_COMMANDLINE_ARGS` to the server, so the port goes in that variable, here and on the app version.
 
-In the [dashboard](https://app.edgegap.com), create an application and a version for the image:
+## 3. Upload and create the app version
 
-- Port: name `gameport`, port `7979`, protocol **UDP**.
+**Upload to Edgegap**: **Application Name** (for example `megacity-metro`), then **Upload image and Create app version**. The plugin pushes the image to your Edgegap registry and opens the dashboard's version form with the image and tag filled in. On it:
+
+- Port: replace the form's default port with name `gameport`, port `7979`, protocol **UDP**.
+- Environment variable: `UNITY_COMMANDLINE_ARGS` = `-port 7979`.
 - 1 vCPU / 2 GB (tested). An idle server used about 18% CPU and 323 MB.
-- Container registry username and token, or deployments fail to pull the image.
+- Registry credentials: if the form asks for them, use the username and token from the dashboard's **Container Registry** page, or deployments fail to pull the image.
+
+For later builds, **Rebuild from Source** builds, containerizes and pushes in one click, then opens the version form again.
 
 ## 4. Deploy and connect a desktop client
 
-Deploy the version from the dashboard. The server log shows `Running on Edgegap ... skipping UGS sessions`.
+Deploy the version with **Deploy to cloud** in the plugin, or from the dashboard. The server log shows `Running on Edgegap ... skipping UGS sessions`.
 
 Start a desktop client with the deployment's host and **external** port (shown on the deployment page, it is not 7979):
 
@@ -91,9 +97,9 @@ Close the project in the Editor first, then run one of these from the project ro
 
 | Client | Command | Output |
 |---|---|---|
-| Windows, quick test build (Mono, minutes) | `<Unity> -batchmode -quit -buildTarget Win64 -standaloneBuildSubtarget Player -projectPath . -executeMethod EdgegapServerBuild.BuildClient -edgegapClientTarget win64 -edgegapClientMono -logFile client.log` | `Builds/Client/win64-mono/Game.exe` |
+| Windows, quick test build (Mono, minutes) | `<Unity> -batchmode -quit -buildTarget Win64 -standaloneBuildSubtarget Player -projectPath . -executeMethod EdgegapClientBuild.Build -edgegapClientTarget win64 -edgegapClientMono -logFile client.log` | `Builds/Client/win64-mono/Game.exe` |
 | Windows, project settings (IL2CPP Master, ~40 min, ~12 GB RAM at link) | same, without `-edgegapClientMono` | `Builds/Client/win64/Game.exe` |
-| Android (IL2CPP, ARM64) | `<Unity> -batchmode -quit -buildTarget Android -projectPath . -executeMethod EdgegapServerBuild.BuildClient -edgegapClientTarget android -logFile android.log` | `Builds/Client/android/MegacityMetro.apk` |
+| Android (IL2CPP, ARM64) | `<Unity> -batchmode -quit -buildTarget Android -projectPath . -executeMethod EdgegapClientBuild.Build -edgegapClientTarget android -logFile android.log` | `Builds/Client/android/MegacityMetro.apk` |
 | Android for the emulator (ARM64 + x86_64) | same, plus `-edgegapAndroidX86_64` | `Builds/Client/android/MegacityMetro-arm64-x86_64.apk` |
 
 Android needs the **Android Build Support** module with its SDK, NDK and OpenJDK. The APK is signed with Unity's debug key, so it installs by sideloading (`adb install`, or copying it to the phone and allowing installs from unknown sources); use your own keystore and an App Bundle for a store build. Mobile release builds hide the Connect option, so phones always use Find Match.
@@ -158,7 +164,7 @@ The Windows client is an IL2CPP Master build: it took about 40 minutes and the l
 - After all three quit, the deployment stopped itself.
 - Locally (server in Docker, mocked Edgegap variables, real matchmaker): when no matched player connected within the 60 s grace, the seats were released and the backfills closed.
 
-For quick test clients, `-executeMethod EdgegapServerBuild.BuildClient -edgegapClientTarget win64 -edgegapClientMono -buildTarget Win64 -standaloneBuildSubtarget Player` builds with Mono into `Builds/Client/win64-mono/`. Pass `-standaloneBuildSubtarget Player` after a server build, or the build fails with "script class layout is incompatible".
+For quick test clients, `-executeMethod EdgegapClientBuild.Build -edgegapClientTarget win64 -edgegapClientMono -buildTarget Win64 -standaloneBuildSubtarget Player` builds with Mono into `Builds/Client/win64-mono/`. Pass `-standaloneBuildSubtarget Player` after a server build, or the build fails with "script class layout is incompatible".
 
 2026-10-22, matchmaker restarted, app version v2: two Windows Mono clients (`-batchmode -nographics`) matched together onto one deployment, connected, and the server logged both tickets with backfills open. The Android APK built (IL2CPP, ARM64, API 23 to 35) but was not run on a device.
 
