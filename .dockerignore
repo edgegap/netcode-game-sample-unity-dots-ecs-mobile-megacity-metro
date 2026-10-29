@@ -1,4 +1,4 @@
-# Build context is the Unity project root: send only the server build to Docker.
+# The Edgegap plugin builds the image with the Unity project root as context: send only the server build to Docker.
 *
 !Builds/EdgegapServer/**
 # Debug symbols and IL2CPP sources Unity writes next to the build; never ship them.

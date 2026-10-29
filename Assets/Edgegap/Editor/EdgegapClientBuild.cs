@@ -1,61 +1,19 @@
-// Command-line Linux dedicated server build for Edgegap. Place under any Assets/**/Editor/ folder.
-// Usage (the project must NOT be open in another Editor instance):
-//   <Unity> -batchmode -quit -projectPath <project> -executeMethod EdgegapServerBuild.Build -logFile -
-// Output: Builds/EdgegapServer/ServerBuild (+ ServerBuild_Data, UnityPlayer.so), matching the Dockerfile.
-// Requires Unity Hub modules: Linux Build Support (Mono or IL2CPP) + Linux Dedicated Server Build Support.
+// Command-line client builds for end-to-end tests. The server is built by the Edgegap plugin (EdgegapPluginBuild).
+// Usage (project closed in the Editor):
+//   <Unity> -batchmode -quit -projectPath <project> -executeMethod EdgegapClientBuild.Build -edgegapClientTarget win64|android|...
 using System;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
 
-public static class EdgegapServerBuild
+public static class EdgegapClientBuild
 {
-    public const string OutputPath = "Builds/EdgegapServer/ServerBuild";
-
-    [MenuItem("Tools/Edgegap/Build Linux Dedicated Server")]
-    public static void Build()
-    {
-        if (!BuildPipeline.IsBuildTargetSupported(BuildTargetGroup.Standalone, BuildTarget.StandaloneLinux64))
-        {
-            Fail("Linux Build Support is not installed. Unity Hub > Installs > this version > Add Modules > "
-                + "Linux Build Support + Linux Dedicated Server Build Support, then restart Unity.");
-            return;
-        }
-
-        string[] scenes = EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).ToArray();
-        if (scenes.Length == 0)
-        {
-            Fail("No enabled scenes in Build Settings. Add the game scene(s) (including the one with the network manager).");
-            return;
-        }
-
-        var options = new BuildPlayerOptions
-        {
-            scenes = scenes,
-            target = BuildTarget.StandaloneLinux64,
-            subtarget = (int)StandaloneBuildSubtarget.Server, // Dedicated Server: defines UNITY_SERVER, strips rendering
-            locationPathName = OutputPath,
-            options = BuildOptions.None,
-        };
-
-        Debug.Log($"EdgegapServerBuild | Building {scenes.Length} scene(s): {string.Join(", ", scenes)}");
-        BuildReport report = BuildPipeline.BuildPlayer(options);
-
-        if (report.summary.result != BuildResult.Succeeded)
-        {
-            Fail($"Build {report.summary.result} with {report.summary.totalErrors} error(s). See the log above.");
-            return;
-        }
-
-        Debug.Log($"EdgegapServerBuild | Succeeded: {OutputPath} ({report.summary.totalSize / (1024 * 1024)} MB)");
-    }
-
     /// <summary>
-    /// Client build for end-to-end tests: -executeMethod EdgegapServerBuild.BuildClient -edgegapClientTarget webgl|win64|mac|linux|android
+    /// Client build for end-to-end tests: -executeMethod EdgegapClientBuild.Build -edgegapClientTarget webgl|win64|mac|linux|android
     /// Output: Builds/Client/&lt;target&gt;/. Switches the active build target (slow the first time).
     /// </summary>
-    public static void BuildClient()
+    public static void Build()
     {
         string[] args = Environment.GetCommandLineArgs();
         int i = Array.IndexOf(args, "-edgegapClientTarget");
@@ -132,12 +90,12 @@ public static class EdgegapServerBuild
             Fail($"Client build {report.summary.result} with {report.summary.totalErrors} error(s).");
             return;
         }
-        Debug.Log($"EdgegapServerBuild | Client build succeeded: {path}");
+        Debug.Log($"EdgegapClientBuild | Succeeded: {path}");
     }
 
     private static void Fail(string message)
     {
-        Debug.LogError($"EdgegapServerBuild | {message}");
+        Debug.LogError($"EdgegapClientBuild | {message}");
         if (Application.isBatchMode)
             EditorApplication.Exit(1);
     }
