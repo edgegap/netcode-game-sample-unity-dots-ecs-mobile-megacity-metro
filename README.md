@@ -1,6 +1,6 @@
 > **Edgegap sample:** this fork runs its dedicated server on Edgegap, with direct connect from desktop clients. See [EDGEGAP.md](EDGEGAP.md).
 
-![Megacity-Metro](Documentation/Images/header.jpg)
+![Add Edgegap dedicated game servers to Unity's Megacity Metro mobile multiplayer sample built with Netcode for Entities.](Documentation/Images/card.jpg)
 
 ## Contents and Quick Links
 - [Megacity Metro Overview](#megacity-metro-overview)
