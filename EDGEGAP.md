@@ -10,7 +10,7 @@ The game's netcode is unchanged. The Edgegap pieces are a few new files, plus sm
 |---|---|
 | `Assets/Scripts/Gameplay/Mix/Multiplayer/Edgegap/EdgegapEnvironment.cs` | Reads what Edgegap injects into a deployment, and the client's direct-connect target (`-edgegapConnect` / `EDGEGAP_CONNECT`) |
 | `Assets/Scripts/Gameplay/Mix/Multiplayer/Edgegap/EdgegapServerLifecycleSystem.cs` | Server world, Edgegap only: stops the deployment when nobody joins or everyone has left |
-| `Packages/manifest.json` | The [Edgegap Unity plugin](https://github.com/edgegap/buildtool-unity-plugin) (`com.edgegap.unity-servers-plugin`, `#3.2.1`, Editor only): builds, containerizes, uploads and deploys the server from **Tools → Edgegap Server Hosting**, with its own Dockerfile |
+| `Packages/manifest.json` | The [Edgegap Unity plugin](https://github.com/edgegap/buildtool-unity-plugin) (`com.edgegap.unity-servers-plugin`, `#3.2.2`, Editor only): builds, containerizes, uploads and deploys the server from **Tools → Edgegap Server Hosting**, with its own Dockerfile |
 | `Assets/Edgegap/Editor/EdgegapPluginBuild.cs` | Runs the plugin's **Build server** from the command line |
 | `Assets/Edgegap/Editor/EdgegapClientBuild.cs` | Command-line test clients (Windows, Android) |
 | `.dockerignore` | Keeps the plugin's Docker context (the project root) to the server build, without debug symbols |
