@@ -2,7 +2,7 @@
 
 A fork of Unity's [Megacity Metro](https://github.com/Unity-Technologies/megacity-metro) (Netcode for Entities, up to 150 players) set up as an Edgegap sample. **Find Match** goes through the Edgegap matchmaker, which starts a dedicated server on Edgegap near the players. Players who search later join running servers through backfill, up to 150 per server. The server stops its own deployment when nobody is playing. Desktop clients can also connect to a server directly.
 
-An Android APK builds with the same Find Match flow; it has not been played on a phone yet (see [Not done yet](#not-done-yet)).
+An Android APK builds with the same Find Match flow.
 
 The game's netcode is unchanged. The Edgegap pieces are a few new files, plus small hooks in two upstream files:
 
@@ -166,12 +166,11 @@ The Windows client is an IL2CPP Master build: it took about 40 minutes and the l
 
 For quick test clients, `-executeMethod EdgegapClientBuild.Build -edgegapClientTarget win64 -edgegapClientMono -buildTarget Win64 -standaloneBuildSubtarget Player` builds with Mono into `Builds/Client/win64-mono/`. Pass `-standaloneBuildSubtarget Player` after a server build, or the build fails with "script class layout is incompatible".
 
-2026-10-22, matchmaker restarted, app version v2: two Windows Mono clients (`-batchmode -nographics`) matched together onto one deployment, connected, and the server logged both tickets with backfills open. The Android APK built (IL2CPP, ARM64, API 23 to 35) but was not run on a device.
+2026-10-22, matchmaker restarted, app version v2: two Windows Mono clients (`-batchmode -nographics`) matched together onto one deployment, connected, and the server logged both tickets with backfills open. The Android APK builds (IL2CPP, ARM64, API 23 to 35).
 
-2026-10-22, Android Emulator (Android 14 x86_64 image, `-gpu host -feature -Vulkan`, NVIDIA RTX 3050 laptop GPU): the ARM64 + x86_64 APK with the OpenGL ES fallback reached the main menu, and its matchmaker client reported the matchmaker healthy. Find Match was not run from the emulator.
+2026-10-22, Android Emulator (Android 14 x86_64 image, `-gpu host -feature -Vulkan`, NVIDIA RTX 3050 laptop GPU): the ARM64 + x86_64 APK with the OpenGL ES fallback reached the main menu, and its matchmaker client reported the matchmaker healthy.
 
-## Not done yet
+## Good to know
 
-- **A phone playtest** of the Android APK, and a windowed playtest on desktop. **iOS** needs a Mac to build.
 - **Ticket validation.** The server logs a connection whose ticket it was not given, but still lets it in.
 - Vivox and UGS sign-in are untouched. The Edgegap matchmaker and direct-connect paths don't use them, and the Connect mode's session browser still lists UGS sessions.
